@@ -1,0 +1,15 @@
+﻿pandas
+numpy
+scipy
+statsmodels
+pymc
+arviz
+scikit-learn
+xgboost
+matplotlib
+fastapi
+uvicorn
+streamlit
+requests
+jupyter
+pytest

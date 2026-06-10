@@ -1,0 +1,31 @@
+﻿# Virtual environment
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (don't commit large raw files - use download_data.py instead)
+data/raw/
+*.csv
+
+# MLflow / experiment tracking
+mlruns/
+
+# Secrets
+.env
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
