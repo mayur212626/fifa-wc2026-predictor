@@ -1,0 +1,16 @@
+# Infrastructure-as-code for Render.
+# With this file in the repo root, Render can spin up the dashboard directly:
+#   Render dashboard -> New -> Blueprint -> pick this repo.
+# It builds the Dockerfile and redeploys automatically on every push to main.
+
+services:
+  - type: web
+    name: wc2026-title-race
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"

@@ -1,0 +1,6 @@
+# Slim runtime for the deployed dashboard only.
+# The full modelling stack (pymc, xgboost, statsmodels...) is NOT needed to
+# serve the pre-computed CSVs, so the container stays small and builds fast.
+streamlit
+pandas
+altair
