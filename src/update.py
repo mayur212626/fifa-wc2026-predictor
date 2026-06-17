@@ -262,8 +262,9 @@ def score_logged_predictions(played: pd.DataFrame) -> None:
 
     probs, outs = [], []
     for row in played.itertuples(index=False):
+        cutoff = pd.Timestamp(row.date + pd.Timedelta(days=1), tz="UTC")
         m = log[(log.home == row.home_team) & (log.away == row.away_team)
-                & (log.run_ts < row.date + pd.Timedelta(days=1))]
+                & (log.run_ts < cutoff)]
         if m.empty:
             continue
         last = m.sort_values("run_ts").iloc[-1]
