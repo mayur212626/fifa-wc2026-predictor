@@ -15,6 +15,9 @@ The forecast in this repo was **frozen before the tournament kicked off** (data
 cutoff June 8, 2026 — see [`reports/forecast_2026.md`](reports/forecast_2026.md)).
 That timestamp matters: these are genuine predictions, not hindsight.
 
+**▶️ [Live dashboard](https://wc2026-title-race.onrender.com)** — explore the
+current odds yourself (first load may take ~30s while the free instance wakes up).
+
 ![World Cup 2026 title-race dashboard](reports/dashboard_header.png)
 
 | | |
