@@ -277,6 +277,60 @@ else:
 
 
 # ----------------------------------------------------------------------------
+# Live accuracy — how the model's Brier score is tracking vs the baseline
+# ----------------------------------------------------------------------------
+
+SCORE_FILE = REPORTS / "score_history.csv"
+if SCORE_FILE.exists():
+    scores = pd.read_csv(SCORE_FILE)
+    scores["ts"] = pd.to_datetime(
+        scores["run_ts"].str.replace(" UTC", "", regex=False), errors="coerce")
+    scores = scores.dropna(subset=["ts"]).sort_values("ts")
+
+    if len(scores):
+        st.subheader("Is the model any good? (live accuracy)")
+        st.caption("Brier score of the model's pre-match predictions, scored "
+                   "against real results, vs a coin-flip baseline. Lower is "
+                   "better — below the dashed line means the model is winning.")
+
+        latest = scores.iloc[-1]
+        beating = latest["brier"] < latest["uniform_brier"]
+        s1, s2, s3 = st.columns(3)
+        s1.metric("Current Brier", f"{latest['brier']:.3f}",
+                  f"{latest['brier'] - latest['uniform_brier']:+.3f} vs baseline",
+                  delta_color="inverse")
+        s2.metric("Matches scored", f"{int(latest['n_matches'])}")
+        s3.metric("Verdict", "Beating baseline" if beating else "Below baseline")
+
+        long = scores.melt(id_vars="ts", value_vars=["brier", "uniform_brier"],
+                           var_name="series", value_name="score")
+        long["series"] = long["series"].map(
+            {"brier": "Model", "uniform_brier": "Coin-flip baseline"})
+
+        acc = (
+            alt.Chart(long)
+            .mark_line(point=True, strokeWidth=2.5)
+            .encode(
+                x=alt.X("ts:T", title=None),
+                y=alt.Y("score:Q", title="Brier score (lower = better)",
+                        scale=alt.Scale(zero=False)),
+                color=alt.Color("series:N", title=None,
+                                scale=alt.Scale(
+                                    domain=["Model", "Coin-flip baseline"],
+                                    range=[GOLD, MUTED])),
+                strokeDash=alt.condition(
+                    "datum.series == 'Coin-flip baseline'",
+                    alt.value([6, 4]), alt.value([0])),
+                tooltip=[alt.Tooltip("series:N", title=""),
+                         alt.Tooltip("ts:T", title="When", format="%b %d %H:%M"),
+                         alt.Tooltip("score:Q", title="Brier", format=".3f")],
+            )
+            .properties(height=340)
+        )
+        st.altair_chart(style_chart(acc), width='stretch')
+
+
+# ----------------------------------------------------------------------------
 # Team explorer
 # ----------------------------------------------------------------------------
 

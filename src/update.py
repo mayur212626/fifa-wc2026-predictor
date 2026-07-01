@@ -253,8 +253,10 @@ def log_group_predictions(model, results: dict, run_ts: str) -> None:
         print(f"Logged {len(rows)} upcoming-fixture predictions")
 
 
-def score_logged_predictions(played: pd.DataFrame) -> None:
-    """Score the most recent pre-match prediction for each played fixture."""
+def score_logged_predictions(played: pd.DataFrame, run_ts: str) -> None:
+    """Score the most recent pre-match prediction for each played fixture,
+    print the running Brier/log-loss, and append them to score_history.csv so
+    the dashboard can chart how the model's live accuracy evolves."""
     path = REPORTS / "predictions_log.csv"
     if not path.exists() or played.empty:
         return
@@ -273,12 +275,26 @@ def score_logged_predictions(played: pd.DataFrame) -> None:
 
     if probs:
         probs, outs = np.array(probs), np.array(outs)
+        brier = brier_score(probs, outs)
+        ll = log_loss(probs, outs)
         print(f"\nRunning score on {len(outs)} played matches the model "
               f"predicted in advance:")
-        print(f"  Brier:    {brier_score(probs, outs):.4f}  "
-              f"(uniform = 0.6667)")
-        print(f"  Log-loss: {log_loss(probs, outs):.4f}  "
-              f"(uniform = 1.0986)")
+        print(f"  Brier:    {brier:.4f}  (uniform = 0.6667)")
+        print(f"  Log-loss: {ll:.4f}  (uniform = 1.0986)")
+
+        # append to a history file so the dashboard can chart accuracy over time
+        score_path = REPORTS / "score_history.csv"
+        snap = pd.DataFrame([{
+            "run_ts": run_ts,
+            "n_matches": len(outs),
+            "brier": round(float(brier), 4),
+            "logloss": round(float(ll), 4),
+            "uniform_brier": 0.6667,
+            "uniform_logloss": 1.0986,
+        }])
+        snap.to_csv(score_path, mode="a", header=not score_path.exists(),
+                    index=False)
+        print(f"Logged score to {score_path.name}")
 
 
 # ----------------------------------------------------------------------------
@@ -314,7 +330,7 @@ if __name__ == "__main__":
 
     REPORTS.mkdir(exist_ok=True)
     append_odds_history(table, run_ts)
-    score_logged_predictions(played)
+    score_logged_predictions(played, run_ts)
     log_group_predictions(model, results, run_ts)
 
     print("\nDone. Run this again after the next matchday.")
