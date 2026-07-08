@@ -1,0 +1,7 @@
+# Minimal dependencies for the scheduled CI update job (src.update only).
+# The full modelling stack (pymc, xgboost, streamlit...) is not needed to
+# refit Dixon-Coles and re-simulate, so the Action installs in seconds.
+pandas
+numpy
+scipy
+requests

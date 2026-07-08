@@ -1,0 +1,43 @@
+name: Daily odds update
+
+# Runs the live update automatically every morning (06:00 UTC — after the
+# previous day's matches finish in North America), commits the refreshed
+# odds/score CSVs, and pushes. The push triggers Render's auto-deploy, so
+# the public dashboard stays current with zero manual work.
+# Can also be triggered by hand from the Actions tab (workflow_dispatch).
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write        # allow the job to push commits back to the repo
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the light dependency set
+        # update.py only needs the numeric stack + requests — no PyMC,
+        # so the job installs in seconds rather than minutes
+        run: pip install -r requirements-ci.txt
+
+      - name: Run the live update
+        run: python -m src.update
+
+      - name: Commit and push refreshed odds
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f reports/odds_history.csv reports/score_history.csv reports/predictions_log.csv
+          git diff --cached --quiet || git commit -m "Auto-update odds and live score"
+          git push
