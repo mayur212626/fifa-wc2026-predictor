@@ -88,6 +88,73 @@ def build_lookups(played: pd.DataFrame):
     return results, shootout_winner
 
 
+def real_third_assignment(played: pd.DataFrame, results: dict):
+    """Once every group match AND the Round of 32 have been played, read the
+    ACTUAL R32 pairings out of the results and pin the third-place slot
+    assignment to reality.
+
+    Why: pre-tournament we approximated FIFA's third-place allocation table
+    with a random feasible assignment. That was fine when everything was
+    simulated, but once the real bracket exists, random assignment lets
+    simulations diverge into brackets that never happened — which gives
+    already-eliminated teams phantom odds. Pinning to the real pairings
+    fixes that: eliminated teams drop to zero because every simulation now
+    replays the true bracket.
+
+    Returns {slot_key: official_team_name} or None if the R32 isn't fully
+    known yet (in which case the caller falls back to random assignment).
+    """
+    # every intra-group fixture, keyed by unordered dataset-name pair
+    group_keys = set()
+    for teams in GROUPS.values():
+        for i in range(4):
+            for j in range(i + 1, 4):
+                group_keys.add(frozenset((dataset_name(teams[i]),
+                                          dataset_name(teams[j]))))
+
+    is_group = played.apply(
+        lambda r: frozenset((r.home_team, r.away_team)) in group_keys, axis=1)
+    group_played = played[is_group]
+    knockout = played[~is_group].sort_values("date")
+
+    if len(group_played) < 72 or len(knockout) < 16:
+        return None                       # real bracket not fully known yet
+
+    r32_matches = knockout.head(16)
+
+    # real group winners (all group fixtures are played, so cond_group never
+    # touches the model — passing None is safe) and the set of thirds
+    rng = np.random.default_rng(0)
+    firsts, third_teams = {}, set()
+    for g, teams in GROUPS.items():
+        table = cond_group(None, teams, results, rng)
+        firsts[g] = table[0][0]
+        third_teams.add(dataset_name(table[2][0]))
+
+    ds_to_official = {dataset_name(t): t
+                      for ts in GROUPS.values() for t in ts}
+
+    assign, slot_i = {}, 0
+    for sa, sb in R32:
+        for spec in (sa, sb):
+            if not spec.startswith("3:"):
+                continue
+            # every third slot is paired with a group winner ("1X")
+            partner = sb if spec == sa else sa
+            anchor_ds = dataset_name(firsts[partner[1]])
+            opp_ds = None
+            for row in r32_matches.itertuples(index=False):
+                if anchor_ds in (row.home_team, row.away_team):
+                    opp_ds = (row.away_team if row.home_team == anchor_ds
+                              else row.home_team)
+                    break
+            if opp_ds is None or opp_ds not in third_teams:
+                return None               # bracket looks inconsistent; bail
+            assign[f"{spec}#{slot_i}"] = ds_to_official[opp_ds]
+            slot_i += 1
+    return assign
+
+
 # ----------------------------------------------------------------------------
 # 3. Conditioned simulation
 # ----------------------------------------------------------------------------
@@ -146,9 +213,11 @@ def cond_knockout(model, a, b, results, shootouts, rng):
 
 
 def simulate_remaining(model, results, shootouts,
-                       n_sims=N_SIMS, seed=42) -> pd.DataFrame:
+                       n_sims=N_SIMS, seed=42,
+                       fixed_thirds: dict | None = None) -> pd.DataFrame:
     """Same tournament loop as src.simulate, but every fixture checks the
-    real-results lookup first."""
+    real-results lookup first. If fixed_thirds is given (the real bracket,
+    from real_third_assignment), it replaces the random slot assignment."""
     from collections import defaultdict
     rng = np.random.default_rng(seed)
     stages = ["r32", "r16", "qf", "sf", "final", "champion"]
@@ -162,7 +231,8 @@ def simulate_remaining(model, results, shootouts,
             seconds[g] = table[1][0]
             thirds.append((g, table[2][0], table[2][1], table[2][2],
                            table[2][3]))
-        third_assign = assign_thirds(thirds, rng)
+        third_assign = (fixed_thirds if fixed_thirds is not None
+                        else assign_thirds(thirds, rng))
 
         slot_i, r32_pairs = 0, []
         for sa, sb in R32:
@@ -320,9 +390,13 @@ if __name__ == "__main__":
         raise SystemExit(f"Team name mapping broken for: {missing}")
 
     results, shootouts = build_lookups(played)
+    fixed = real_third_assignment(played, results)
+    if fixed is not None:
+        print("Round of 32 fully known — pinning simulations to the real "
+              "bracket (eliminated teams will show 0).")
     print(f"Conditioning on {len(results)} real results. "
           f"Simulating the rest {N_SIMS:,} times ...")
-    table = simulate_remaining(model, results, shootouts)
+    table = simulate_remaining(model, results, shootouts, fixed_thirds=fixed)
 
     pct = (table.set_index("team") * 100).round(1)
     print("\nCurrent title odds (top 10):\n")

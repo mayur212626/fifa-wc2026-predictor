@@ -33,7 +33,8 @@ from src.data import load_results, filter_matches
 from src.bayesian import BayesianGoalModel
 from src.simulate import (GROUPS, R32, R16, QF, SF,
                           dataset_name, validate_teams, assign_thirds)
-from src.update import played_2026, build_lookups, cond_group, cond_knockout
+from src.update import (played_2026, build_lookups, cond_group,
+                        cond_knockout, real_third_assignment)
 
 REPORTS = Path(__file__).resolve().parents[1] / "reports"
 N_SIMS = 5000
@@ -71,9 +72,12 @@ class BayesianAdapter:
 
 def simulate_bayesian(adapter: BayesianAdapter, results: dict,
                       shootouts: dict, n_sims: int = N_SIMS,
-                      seed: int = 42) -> pd.DataFrame:
+                      seed: int = 42,
+                      fixed_thirds: dict | None = None) -> pd.DataFrame:
     """Same conditioned tournament loop as src.update, but re-sampling a
-    posterior parameter draw at the start of every replication."""
+    posterior parameter draw at the start of every replication. If
+    fixed_thirds is given (the real bracket), it replaces random slot
+    assignment so simulations follow the true pairings."""
     rng = np.random.default_rng(seed)
     stages = ["r32", "r16", "qf", "sf", "final", "champion"]
     counts = {t: defaultdict(int) for ts in GROUPS.values() for t in ts}
@@ -89,7 +93,8 @@ def simulate_bayesian(adapter: BayesianAdapter, results: dict,
             seconds[g] = table[1][0]
             thirds.append((g, table[2][0], table[2][1], table[2][2],
                            table[2][3]))
-        third_assign = assign_thirds(thirds, rng)
+        third_assign = (fixed_thirds if fixed_thirds is not None
+                        else assign_thirds(thirds, rng))
 
         slot_i, r32_pairs = 0, []
         for sa, sb in R32:
@@ -162,9 +167,14 @@ if __name__ == "__main__":
     # 3. Condition on everything actually played, then simulate
     played = played_2026(df_all)
     results, shootouts = build_lookups(played)
+    fixed = real_third_assignment(played, results)
+    if fixed is not None:
+        print("Round of 32 fully known — pinning simulations to the real "
+              "bracket (eliminated teams will show 0).")
     print(f"\nConditioning on {len(results)} real results. Simulating "
           f"{N_SIMS:,} tournaments, one posterior draw per replication ...")
-    bayes_table = simulate_bayesian(adapter, results, shootouts)
+    bayes_table = simulate_bayesian(adapter, results, shootouts,
+                                    fixed_thirds=fixed)
 
     pct = (bayes_table.set_index("team") * 100).round(1)
     print("\nBayesian title odds (top 12):\n")
