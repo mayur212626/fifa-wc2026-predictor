@@ -332,7 +332,7 @@ def score_logged_predictions(played: pd.DataFrame, run_ts: str) -> None:
         return
     log = pd.read_csv(path, parse_dates=["run_ts"])
 
-    probs, outs = [], []
+    probs, outs, rows = [], [], []
     for row in played.itertuples(index=False):
         cutoff = pd.Timestamp(row.date + pd.Timedelta(days=1), tz="UTC")
         m = log[(log.home == row.home_team) & (log.away == row.away_team)
@@ -340,8 +340,21 @@ def score_logged_predictions(played: pd.DataFrame, run_ts: str) -> None:
         if m.empty:
             continue
         last = m.sort_values("run_ts").iloc[-1]
-        probs.append([last.p_home, last.p_draw, last.p_away])
-        outs.append(outcome_index(int(row.home_score), int(row.away_score)))
+        p = [float(last.p_home), float(last.p_draw), float(last.p_away)]
+        o = outcome_index(int(row.home_score), int(row.away_score))
+        probs.append(p)
+        outs.append(o)
+        rows.append({
+            "date": row.date.date(),
+            "home": row.home_team,
+            "away": row.away_team,
+            "score": f"{int(row.home_score)}-{int(row.away_score)}",
+            "p_home": round(p[0], 4),
+            "p_draw": round(p[1], 4),
+            "p_away": round(p[2], 4),
+            "outcome": ["home win", "draw", "away win"][o],
+            "p_outcome": round(p[o], 4),
+        })
 
     if probs:
         probs, outs = np.array(probs), np.array(outs)
@@ -365,6 +378,10 @@ def score_logged_predictions(played: pd.DataFrame, run_ts: str) -> None:
         snap.to_csv(score_path, mode="a", header=not score_path.exists(),
                     index=False)
         print(f"Logged score to {score_path.name}")
+
+        # full per-match record for the dashboard's scorecard section
+        pd.DataFrame(rows).to_csv(REPORTS / "match_scorecard.csv", index=False)
+        print(f"Wrote match scorecard ({len(rows)} matches)")
 
 
 # ----------------------------------------------------------------------------

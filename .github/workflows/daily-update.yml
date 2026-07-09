@@ -38,6 +38,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f reports/odds_history.csv reports/score_history.csv reports/predictions_log.csv
+          git add -f reports/odds_history.csv reports/score_history.csv reports/predictions_log.csv reports/match_scorecard.csv
           git diff --cached --quiet || git commit -m "Auto-update odds and live score"
           git push
