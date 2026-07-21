@@ -83,6 +83,42 @@ st.markdown(
               animation:shine 3s linear infinite; }
       @keyframes shine { to { background-position:200% center; } }
       .champ .line { color:#AEB6C4; margin:0; max-width:70ch; }
+      .confetti { pointer-events:none; position:fixed; inset:0; z-index:999;
+              overflow:hidden; }
+      .confetti span { position:absolute; top:-6vh; width:9px; height:15px;
+              border-radius:2px; opacity:.85;
+              animation-name:fall; animation-timing-function:linear;
+              animation-iteration-count:infinite; }
+      .confetti span:nth-child(odd) { background:#F2C14E; }
+      .confetti span:nth-child(3n) { background:#C8102E; }
+      .confetti span:nth-child(4n) { background:#FFF3C4; }
+      @keyframes fall { to { transform:translateY(112vh) rotate(720deg); } }
+      .finalcard { display:flex; align-items:center; justify-content:center;
+              gap:28px; border:1px solid #222A38; border-radius:14px;
+              background:#141925; padding:18px 22px; margin:12px 0 4px 0; }
+      .finalcard .side { text-align:center;
+              font-family:'Space Grotesk',sans-serif; font-size:1.15rem;
+              font-weight:600; color:#E6E9EF; }
+      .finalcard .side .fl { font-size:1.9rem; display:block; }
+      .finalcard .score { font-family:'Space Grotesk',sans-serif;
+              font-size:2.8rem; font-weight:700; color:#F4F6FA; }
+      .finalcard .meta { color:#8A93A6; font-size:.85rem; text-align:center;
+              margin-top:2px; }
+      .podium { display:flex; gap:14px; align-items:flex-end;
+              margin:16px 0 4px 0; }
+      .podium .step { flex:1; border-radius:12px 12px 0 0; text-align:center;
+              padding:14px 8px 10px; font-family:'Space Grotesk',sans-serif;
+              color:#E6E9EF; display:flex; flex-direction:column;
+              justify-content:flex-start; }
+      .podium .medal { font-size:1.7rem; }
+      .podium .tname { font-weight:700; font-size:1.05rem; }
+      .podium .tsub { color:#8A93A6; font-size:.8rem; }
+      .p1 { background:linear-gradient(180deg,rgba(242,193,78,.25),#141925);
+              border:1px solid rgba(242,193,78,.5); height:160px; }
+      .p2 { background:linear-gradient(180deg,rgba(174,182,196,.22),#141925);
+              border:1px solid rgba(174,182,196,.4); height:124px; }
+      .p3 { background:linear-gradient(180deg,rgba(176,115,54,.25),#141925);
+              border:1px solid rgba(176,115,54,.45); height:102px; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -219,12 +255,23 @@ if float(fav["champion"]) >= 99.9:
         st.balloons()
 
     champ_team = fav["team"]
-    subtitle = ("Beat Argentina 1–0 after extra time — Ferran Torres, 106th "
-                "minute. One goal conceded in the entire tournament: a World "
-                "Cup record, and exactly the defence this model rated best "
-                "in the world." if champ_team == "Spain"
+    subtitle = ("One goal conceded in the entire tournament — a World Cup "
+                "record, and exactly the defence this model rated best in "
+                "the world." if champ_team == "Spain"
                 else "Champions of the 2026 FIFA World Cup.")
     flag = " 🇪🇸" if champ_team == "Spain" else ""
+
+    # gold confetti raining over the whole page
+    pieces = "".join(
+        f'<span style="left:{l}%;animation-duration:{d}s;'
+        f'animation-delay:{dl}s"></span>'
+        for l, d, dl in [(2, 7.5, 0), (9, 9, 1.4), (16, 8, .6), (23, 10, 2.2),
+                         (30, 7, 1.1), (37, 9.5, .3), (44, 8.5, 1.8),
+                         (51, 7.2, 2.6), (58, 9.8, .9), (65, 8.2, 1.5),
+                         (72, 7.8, 2.9), (79, 9.2, .2), (86, 8.8, 1.9),
+                         (93, 7.4, 1.0), (97, 10, 2.4), (6, 8.6, 3.1)])
+    st.markdown(f'<div class="confetti">{pieces}</div>',
+                unsafe_allow_html=True)
 
     st.markdown(
         f"""
@@ -232,6 +279,26 @@ if float(fav["champion"]) >= 99.9:
           <div class="crown">🏆{flag}</div>
           <h2>{champ_team.upper()} — WORLD CHAMPIONS 2026</h2>
           <p class="line">{subtitle}</p>
+          <div class="finalcard">
+            <div class="side"><span class="fl">🇪🇸</span>SPAIN</div>
+            <div>
+              <div class="score">1 — 0</div>
+              <div class="meta">FINAL · AET · Ferran Torres 106'</div>
+              <div class="meta">MetLife Stadium · July 19, 2026</div>
+            </div>
+            <div class="side"><span class="fl">🇦🇷</span>ARGENTINA</div>
+          </div>
+          <div class="podium">
+            <div class="step p2"><span class="medal">🥈</span>
+              <span class="tname">Argentina</span>
+              <span class="tsub">Runners-up · lost the final 1-0 aet</span></div>
+            <div class="step p1"><span class="medal">🥇</span>
+              <span class="tname">Spain</span>
+              <span class="tsub">Champions · 2nd title</span></div>
+            <div class="step p3"><span class="medal">🥉</span>
+              <span class="tname">England</span>
+              <span class="tsub">Third · beat France 6-4</span></div>
+          </div>
         </div>
         """,
         unsafe_allow_html=True,
