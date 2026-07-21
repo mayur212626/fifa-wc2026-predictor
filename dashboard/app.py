@@ -123,8 +123,9 @@ st.markdown(
               padding:18px 0 6px 0; border-top:1px solid #222A38;
               margin-top:28px; font-family:'Space Grotesk',sans-serif; }
       .sitefooter b { color:#F2C14E; font-weight:600; }
+      .sitefooter b a { color:#F2C14E; }
       .sitefooter a { color:#8A93A6; text-decoration:none; }
-      .sitefooter a:hover { color:#F2C14E; }
+      .sitefooter a:hover { color:#FFF3C4; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -250,6 +251,37 @@ c2.metric("Chasing", current.iloc[1]["team"],
 c3.metric("Still alive", f"{alive}", "teams with a path to the title")
 c4.metric("Snapshots logged", f"{n_snapshots}", "matchday updates")
 st.caption(source_note)
+
+with st.expander("How this forecast worked  ·  read before you judge the numbers"):
+    st.markdown(
+        """
+        This wasn't tuned after the fact. Here's the honest process:
+
+        **1 · Frozen before kickoff.** A full forecast was locked in on
+        **June 12, 2026**, before a single match was played — champion odds
+        for all 48 teams, committed to git with a timestamp so it can't be
+        edited after the fact. That original forecast lives in the repo at
+        `reports/forecast_2026.md`, and the *Forecast Story* tab scores it
+        against what actually happened.
+
+        **2 · Re-run every matchday, live.** From kickoff to the final, the
+        model re-fit on the latest results and re-simulated the remaining
+        bracket **every day** — automatically, via a scheduled GitHub Actions
+        job. Played matches were locked to their real scores; only the
+        unplayed bracket was simulated. Each run logged a snapshot, which is
+        what powers the trend and accuracy charts.
+
+        **3 · Graded against reality.** For every match, the model's pre-match
+        win/draw/loss probabilities were scored against the actual result
+        using Brier score and log-loss (see the *Model Lab* tab). Nothing here
+        is hindsight — you're looking at predictions made *before* each match,
+        checked afterwards.
+
+        The point was never to pick every winner. Football is too random for
+        that. The point was calibration: when the model says 30%, does it
+        happen about 30% of the time?
+        """
+    )
 
 # ----------------------------------------------------------------------------
 # Champion takeover — fires automatically once the tournament is decided
@@ -688,7 +720,9 @@ st.caption(
 st.markdown(
     """
     <div class="sitefooter">
-      Built and forecast by <b>Mayur Patil</b> · © 2026 ·
+      Built and forecast by
+      <b><a href="https://www.linkedin.com/in/mayurpatil26/"
+         target="_blank">Mayur Patil</a></b> · © 2026 ·
       <a href="https://github.com/mayur212626/fifa-wc2026-predictor"
          target="_blank">Code on GitHub</a> · MIT License
     </div>
