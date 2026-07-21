@@ -119,6 +119,12 @@ st.markdown(
               border:1px solid rgba(174,182,196,.4); height:124px; }
       .p3 { background:linear-gradient(180deg,rgba(176,115,54,.25),#141925);
               border:1px solid rgba(176,115,54,.45); height:102px; }
+      .sitefooter { text-align:center; color:#6E778A; font-size:.85rem;
+              padding:18px 0 6px 0; border-top:1px solid #222A38;
+              margin-top:28px; font-family:'Space Grotesk',sans-serif; }
+      .sitefooter b { color:#F2C14E; font-weight:600; }
+      .sitefooter a { color:#8A93A6; text-decoration:none; }
+      .sitefooter a:hover { color:#F2C14E; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -677,4 +683,15 @@ st.caption(
     "5,000 Monte Carlo simulations of the remaining bracket, pinned to the "
     "real knockout pairings. Model estimates, not certainties — a 17% "
     "favourite still loses the title 83% of the time."
+)
+
+st.markdown(
+    """
+    <div class="sitefooter">
+      Built and forecast by <b>Mayur Patil</b> · © 2026 ·
+      <a href="https://github.com/mayur212626/fifa-wc2026-predictor"
+         target="_blank">Code on GitHub</a> · MIT License
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
