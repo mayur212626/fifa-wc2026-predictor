@@ -69,6 +69,20 @@ st.markdown(
       .stCaption, .stCaption p { color:#6E778A !important; }
       button[data-baseweb="tab"] { font-family:'Space Grotesk',sans-serif;
               font-weight:600; font-size:1rem; }
+      .champ { position:relative; border:1px solid rgba(242,193,78,.45);
+              border-radius:18px; padding:26px 30px; margin:6px 0 14px 0;
+              background:linear-gradient(135deg,#1A1505 0%,#141925 60%);
+              overflow:hidden; }
+      .champ .crown { font-size:2rem; }
+      .champ h2 { font-family:'Space Grotesk',sans-serif; font-size:2.3rem;
+              margin:.15rem 0 .4rem 0; letter-spacing:.02em;
+              background:linear-gradient(90deg,#F2C14E,#FFF3C4,#F2C14E);
+              background-size:200% auto;
+              -webkit-background-clip:text; background-clip:text;
+              -webkit-text-fill-color:transparent; color:transparent;
+              animation:shine 3s linear infinite; }
+      @keyframes shine { to { background-position:200% center; } }
+      .champ .line { color:#AEB6C4; margin:0; max-width:70ch; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -194,6 +208,61 @@ c2.metric("Chasing", current.iloc[1]["team"],
 c3.metric("Still alive", f"{alive}", "teams with a path to the title")
 c4.metric("Snapshots logged", f"{n_snapshots}", "matchday updates")
 st.caption(source_note)
+
+# ----------------------------------------------------------------------------
+# Champion takeover — fires automatically once the tournament is decided
+# ----------------------------------------------------------------------------
+
+if float(fav["champion"]) >= 99.9:
+    if not st.session_state.get("celebrated"):
+        st.session_state["celebrated"] = True
+        st.balloons()
+
+    champ_team = fav["team"]
+    subtitle = ("Beat Argentina 1–0 after extra time — Ferran Torres, 106th "
+                "minute. One goal conceded in the entire tournament: a World "
+                "Cup record, and exactly the defence this model rated best "
+                "in the world." if champ_team == "Spain"
+                else "Champions of the 2026 FIFA World Cup.")
+    flag = " 🇪🇸" if champ_team == "Spain" else ""
+
+    st.markdown(
+        f"""
+        <div class="champ">
+          <div class="crown">🏆{flag}</div>
+          <h2>{champ_team.upper()} — WORLD CHAMPIONS 2026</h2>
+          <p class="line">{subtitle}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # the forecast's journey, pulled from the project's own data
+    frozen_p, frozen_rank = None, None
+    if sim is not None:
+        fr_sorted = (sim.sort_values("champion", ascending=False)
+                     .reset_index(drop=True))
+        hit = fr_sorted.index[fr_sorted["team"] == champ_team]
+        if len(hit):
+            frozen_rank = int(hit[0]) + 1
+            frozen_p = float(fr_sorted.loc[hit[0], "champion"])
+    pre_final_p = None
+    if hist is not None:
+        h_t = hist[(hist["team"] == champ_team) & (hist["champion"] < 99.9)]
+        if len(h_t):
+            pre_final_p = float(h_t.sort_values("ts")["champion"].iloc[-1])
+
+    k1, k2, k3 = st.columns(3)
+    if frozen_p is not None:
+        k1.metric("Frozen forecast · Jun 12", f"{frozen_p:.1f}%",
+                  f"#{frozen_rank} of 48, before kickoff")
+        k3.metric("vs picking at random", f"{frozen_p / (100 / 48):.1f}×",
+                  "more likely than a 1-in-48 guess")
+    if pre_final_p is not None:
+        k2.metric("Going into the final", f"{pre_final_p:.1f}%",
+                  "the model's favourite")
+    st.caption("Full journey: the Forecast Story tab scores the frozen "
+               "June forecast against the completed tournament.")
 
 tab_race, tab_lab, tab_story = st.tabs(
     ["🏆 Title Race", "🔬 Model Lab", "📜 The Forecast Story"])
