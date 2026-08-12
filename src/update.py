@@ -47,6 +47,7 @@ N_SIMS = 5000
 # ----------------------------------------------------------------------------
 
 def refresh_data() -> None:
+    RAW.mkdir(parents=True, exist_ok=True)
     for fname in ("results.csv", "shootouts.csv"):
         try:
             r = requests.get(f"{BASE}/{fname}", timeout=60)
